@@ -32,9 +32,9 @@ class PipedriveBaseTest(unittest.TestCase):
     INCREMENTAL = "INCREMENTAL"
     FULL_TABLE = "FULL_TABLE"
     START_DATE_FORMAT = "%Y-%m-%dT00:00:00Z"
-    BOOKMARK_COMPARISON_FORMAT = "%Y-%m-%dT00:00:00+00:00"
+    BOOKMARK_COMPARISON_FORMAT = "%Y-%m-%dT00:00:00Z"
     REPLICATION_KEY_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
-    BOOKMARK_FORMAT = "%Y-%m-%dT%H:%M:%S+00:00"
+    BOOKMARK_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
     LOGGER = singer.get_logger()
     STARTDATE_KEYS = "start_date"
 
@@ -93,7 +93,9 @@ class PipedriveBaseTest(unittest.TestCase):
             },
             'activity_types': {
                 self.PRIMARY_KEYS: {'id'},
-                self.REPLICATION_METHOD: self.FULL_TABLE
+                self.REPLICATION_METHOD: self.INCREMENTAL,
+                self.REPLICATION_KEYS: {'update_time'},
+                self.STARTDATE_KEYS: {'update_time'}
             },
             'persons': {
                 self.PRIMARY_KEYS: {'id'},
@@ -107,7 +109,9 @@ class PipedriveBaseTest(unittest.TestCase):
             },
             'pipelines': {
                 self.PRIMARY_KEYS: {'id'},
-                self.REPLICATION_METHOD: self.FULL_TABLE
+                self.REPLICATION_METHOD: self.INCREMENTAL,
+                self.REPLICATION_KEYS: {'update_time'},
+                self.STARTDATE_KEYS: {'update_time'}
             },
             'notes': {
                 self.PRIMARY_KEYS: {'id'},
@@ -117,7 +121,9 @@ class PipedriveBaseTest(unittest.TestCase):
             },
             'stages': {
                 self.PRIMARY_KEYS: {'id'},
-                self.REPLICATION_METHOD: self.FULL_TABLE
+                self.REPLICATION_METHOD: self.INCREMENTAL,
+                self.REPLICATION_KEYS: {'update_time'},
+                self.STARTDATE_KEYS: {'update_time'}
             },
             'products': {
                 self.PRIMARY_KEYS: {'id'},
@@ -133,12 +139,15 @@ class PipedriveBaseTest(unittest.TestCase):
             },
             'users': {
                 self.PRIMARY_KEYS: {'id'},
-                self.REPLICATION_METHOD: self.FULL_TABLE,
+                self.REPLICATION_METHOD: self.INCREMENTAL,
+                self.REPLICATION_KEYS: {'modified'},
                 self.STARTDATE_KEYS: {'modified'}
             },
             'filters': {
                 self.PRIMARY_KEYS: {'id'},
-                self.REPLICATION_METHOD: self.FULL_TABLE
+                self.REPLICATION_METHOD: self.INCREMENTAL,
+                self.REPLICATION_KEYS: {'update_time'},
+                self.STARTDATE_KEYS: {'update_time'}
             },
             'deals': {
                 self.PRIMARY_KEYS: {'id'},
@@ -370,17 +379,21 @@ class PipedriveBaseTest(unittest.TestCase):
 
         raise NotImplementedError("Tests do not account for dates of this format: {}".format(date_value))
 
-    def timedelta_formatted(self, dtime, days=0):
+    def timedelta_formatted(self, dtime, days=0, hours=0, format=None):
+        if format:
+            date_time = dt.strptime(dtime, format)
+            return dt.strftime(date_time + timedelta(days=days, hours=hours), format)
+
         try:
             date_stripped = dt.strptime(dtime, self.START_DATE_FORMAT)
-            return_date = date_stripped + timedelta(days=days)
+            return_date = date_stripped + timedelta(days=days, hours=hours)
 
             return dt.strftime(return_date, self.START_DATE_FORMAT)
 
         except ValueError:
             try:
                 date_stripped = dt.strptime(dtime, self.BOOKMARK_COMPARISON_FORMAT)
-                return_date = date_stripped + timedelta(days=days)
+                return_date = date_stripped + timedelta(days=days, hours=hours)
 
                 return dt.strftime(return_date, self.BOOKMARK_COMPARISON_FORMAT)
 
